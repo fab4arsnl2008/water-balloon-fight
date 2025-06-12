@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Water Balloon Game</title>
+    <!-- Tailwind CSS for basic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for retro game aesthetics */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'); /* A common retro pixel font */
+
+        body {
+            font-family: 'Press Start 2P', cursive; /* Apply retro font */
+            background-color: #1a202c; /* Dark background similar to a terminal */
+            color: #e2e8f0; /* Light text color */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            padding: 1rem;
+        }
+
+        #game-container {
+            background-color: #333; /* Darker grey for game background */
+            border: 4px solid #8ac926; /* Neon green border */
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(138, 201, 38, 0.7); /* Neon glow effect */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            max-width: 90vw; /* Responsive width */
+            max-height: 90vh; /* Responsive height */
+            aspect-ratio: 16 / 9; /* Maintain aspect ratio */
+            position: relative; /* For canvas positioning */
+        }
+
+        canvas {
+            background-color: #000; /* Game canvas background */
+            border: 2px solid #8ac926;
+            border-radius: 4px;
+            display: block;
+            margin: 0 auto;
+            flex-grow: 1; /* Allow canvas to fill available space */
+            width: 100%; /* Make canvas responsive within container */
+            height: auto; /* Maintain aspect ratio with width */
+            max-width: 800px; /* Max width for canvas */
+            max-height: 450px; /* Max height for canvas based on 16:9 */
+            min-width: 320px; /* Minimum width for smaller screens */
+            min-height: 180px; /* Minimum height for smaller screens */
+        }
+
+        #ui-panel {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            background-color: #444; /* UI panel background */
+            border-radius: 4px;
+            border: 2px solid #6a9955; /* Slightly lighter green border */
+        }
+
+        .game-info {
+            font-size: 0.8rem; /* Smaller font for game info */
+            color: #add8e6; /* Light blue for info text */
+        }
+
+        #score-display {
+            font-size: 1.2rem; /* Larger font for score */
+            color: #ffda67; /* Yellowish for score */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #instructions {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: #b3b3b3;
+            max-width: 600px;
+        }
+
+        /* Common style for overlay screens (start and game over) */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        #start-screen {
+            color: #8ac926; /* Green for start screen title */
+            font-size: 1.8rem;
+        }
+
+        #game-over-screen {
+            color: #ff4d4d; /* Red for game over */
+            font-size: 1.5rem;
+        }
+
+        .screen-button {
+            background-color: #8ac926;
+            color: #1a202c;
+            font-family: 'Press Start 2P', cursive;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+            box-shadow: 3px 3px 0px #5e8b2b; /* Chiseled button look */
+            transition: all 0.1s ease-in-out;
+        }
+
+        .screen-button:hover {
+            background-color: #a4e639;
+            box-shadow: 2px 2px 0px #5e8b2b;
+            transform: translate(1px, 1px);
+        }
+
+        /* Message box for alerts */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #8ac926;
+            box-shadow: 0 0 10px rgba(138, 201, 38, 0.7);
+            z-index: 1000;
+            text-align: center;
+            font-family: 'Press Start 2P', cursive;
+            display: none; /* Hidden by default */
+        }
+
+        .message-box p {
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .message-box button {
+            background-color: #8ac926;
+            color: #1a202c;
+            font-family: 'Press Start 2P', cursive;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            box-shadow: 2px 2px 0px #5e8b2b;
+            transition: all 0.1s ease-in-out;
+        }
+
+        .message-box button:hover {
+            background-color: #a4e639;
+            box-shadow: 1px 1px 0px #5e8b2b;
+            transform: translate(0.5px, 0.5px);
+        }
+    </style>
+    <!-- Three.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 text-gray-100 font-inter">
+
+    <div id="game-container" class="relative w-full h-full flex flex-col items-center justify-center">
+        <div id="ui-panel" class="flex justify-between items-center w-full mb-2">
+            <div class="game-info">Score: <span id="score-display">0</span></div>
+            <div class="game-info">High Score: <span id="high-score-display">0</span></div>
+            <div class="game-info">Blue Targets: <span id="people-count">10</span></div>
+        </div>
+        <canvas id="gameCanvas" class="flex-grow"></canvas>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay-screen">
+            <p>WATER BALLOON FUN!</p>
+            <button id="start-button" class="screen-button">START GAME</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="overlay-screen hidden">
+            <p>GAME OVER!</p>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <p>High Score: <span id="final-high-score">0</span></p>
+            <button id="restart-button" class="screen-button">RESTART</button>
+        </div>
+    </div>
+
+    <div id="instructions" class="mt-4 text-sm text-gray-400 max-w-lg">
+        <p><strong>HOW TO PLAY:</strong></p>
+        <p>Use the <span class="text-yellow-300">&larr; LEFT</span> and <span class="text-yellow-300">RIGHT &rarr;</span> arrow keys to aim your water balloon launcher.</p>
+        <p>Press <span class="text-yellow-300">SPACEBAR</span> to throw a water balloon.</p>
+        <p>Hit unsuspecting people to score points! Hit **blue** people for points, avoid **red** people or you'll lose points! If your score drops below zero, it's game over!</p>
+    </div>
+
+    <!-- Message box for in-game notifications -->
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button onclick="hideMessageBox()">OK</button>
+    </div>
+
+    <script>
+        // Global variables for Three.js scene, camera, renderer
+        let scene, camera, renderer;
+        // Game state variables
+        let score = 0;
+        let highScore = 0;
+        let blueTargetsLeft = 10; // Renamed for clarity: tracks blue people to hit
+        let gameOver = true; // Game starts in a 'game over' state (before starting)
+        let animationFrameId; // To store the requestAnimationFrame ID for cancellation
+
+        // Game objects
+        let launcher;
+        let aimingLine;
+        let arrowhead; // Declare arrowhead globally
+        let waterBalloons = [];
+        let people = []; // Contains both red and blue people
+
+        // Game parameters
+        const INITIAL_BLUE_TARGETS = 10; // The total number of blue people to hit to win a round (10 hits * 100 points/hit = 1000 points)
+        const LAUNCHER_Y = -150; // Y position of the launcher
+        const LAUNCHER_ANGLE_STEP = 0.03; // How much angle changes per arrow key press
+        const LAUNCH_SPEED = 10; // Speed of the water balloon
+        const WATER_BALLOON_RADIUS = 5;
+        const PERSON_WIDTH = 20;
+        const PERSON_HEIGHT = 40;
+        const MAX_PEOPLE_ON_SCREEN = 3; // Maximum number of people on screen at once (mix of red and blue)
+        const PEOPLE_MOVE_SPEED_MIN = 1.5; // Increased minimum speed
+        const PEOPLE_MOVE_SPEED_MAX = 3.0; // Increased maximum speed
+        const PEOPLE_COLORS = {
+            RED: 0xFF0000,
+            BLUE: 0x0000FF
+        };
+
+        const GAME_AREA_WIDTH = 400; // Define a fixed game area width for coordinates
+        const GAME_AREA_HEIGHT = 300; // Define a fixed game area height for coordinates
+
+        // DOM elements
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const peopleCountDisplay = document.getElementById('people-count');
+        const startScreen = document.getElementById('start-screen');
+        const startGameButton = document.getElementById('start-button');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const finalHighScoreDisplay = document.getElementById('final-high-score');
+        const restartButton = document.getElementById('restart-button');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+
+        // Message box functions
+        function showMessageBox(message) {
+            messageText.textContent = message;
+            messageBox.style.display = 'block';
+        }
+
+        function hideMessageBox() {
+            messageBox.style.display = 'none';
+        }
+
+        // Initialize the game environment on window load (but not start the game itself)
+        window.onload = function () {
+            initEnvironment(); // Only initialize Three.js, not game logic
+            // Load high score from local storage
+            const storedHighScore = localStorage.getItem('waterBalloonHighScore');
+            if (storedHighScore) {
+                highScore = parseInt(storedHighScore);
+                highScoreDisplay.textContent = highScore;
+            }
+            // Show the start screen initially
+            startScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('hidden'); // Ensure game over screen is hidden
+
+            // Event Listeners for input
+            startGameButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame); // Restart button also calls startGame
+
+            updateUI(); // Update UI with initial score and high score
+        };
+
+        // --- Three.js Environment Initialization ---
+        function initEnvironment() {
+            const canvas = document.getElementById('gameCanvas');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue
+
+            // Camera (Orthographic for 2D view)
+            camera = new THREE.OrthographicCamera(
+                GAME_AREA_WIDTH / -2,
+                GAME_AREA_WIDTH / 2,
+                GAME_AREA_HEIGHT / 2,
+                GAME_AREA_HEIGHT / -2,
+                0.1,
+                1000
+            );
+            camera.position.z = 1;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            resizeGame(); // Set initial size
+
+            // Handle window resizing
+            window.addEventListener('resize', resizeGame, false);
+
+            // --- Game Objects Creation (static, persist across games) ---
+
+            // Launcher
+            const launcherGeometry = new THREE.BoxGeometry(40, 10, 1);
+            const launcherMaterial = new THREE.MeshBasicMaterial({ color: 0x663300 }); // Brown
+            launcher = new THREE.Mesh(launcherGeometry, launcherMaterial);
+            launcher.position.set(0, LAUNCHER_Y, 0);
+            scene.add(launcher);
+
+            // Aiming Line
+            const aimGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, LAUNCHER_Y, 0),
+                new THREE.Vector3(0, LAUNCHER_Y + 50, 0)
+            ]);
+            // Increased linewidth for better visibility
+            const aimMaterial = new THREE.LineBasicMaterial({ color: 0xFFD700, linewidth: 5 }); // Gold/yellow
+            aimingLine = new THREE.Line(aimGeometry, aimMaterial);
+            scene.add(aimingLine);
+            
+            // Create Arrowhead
+            const arrowHeadWidth = 5;
+            const arrowHeadHeight = 15; // Length of the arrow head
+            const arrowheadGeometry = new THREE.BoxGeometry(arrowHeadWidth, arrowHeadHeight, 1);
+            const arrowheadMaterial = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+            arrowhead = new THREE.Mesh(arrowheadGeometry, arrowheadMaterial);
+            scene.add(arrowhead);
+
+            launcher.userData.aimAngle = Math.PI / 2; // Start aiming straight up
+            updateAimingLine(); // Update aiming line visual and arrowhead
+        }
+
+        // --- Game Start Function ---
+        function startGame() {
+            // Reset game state
+            score = 0;
+            blueTargetsLeft = INITIAL_BLUE_TARGETS; // Reset to initial target count for blue people
+            gameOver = false;
+
+            // Clear all existing game objects (balloons, people) from scene and arrays
+            waterBalloons.forEach(balloon => scene.remove(balloon));
+            people.forEach(person => scene.remove(person));
+            waterBalloons = [];
+            people = [];
+
+            // Reset launcher angle
+            launcher.userData.aimAngle = Math.PI / 2;
+            updateAimingLine();
+
+            // Respawn initial people
+            spawnPeople(MAX_PEOPLE_ON_SCREEN); // Spawn max people for the screen
+
+            // Hide start/game over screens
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+
+            // Update UI
+            updateUI();
+
+            // Stop any existing animation frame and start a new one
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animate(); // Start the animation loop
+            document.addEventListener('keydown', onKeyDown); // Re-enable input if needed
+        }
+
+        // Adjust canvas and camera on window resize
+        function resizeGame() {
+            const canvas = renderer.domElement;
+            const container = canvas.parentElement;
+
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Maintain aspect ratio (e.g., 16:9)
+            const aspectRatio = GAME_AREA_WIDTH / GAME_AREA_HEIGHT;
+
+            if (width / height > aspectRatio) {
+                height = width / aspectRatio; // Adjust height to match aspect ratio
+            } else {
+                width = height * aspectRatio; // Adjust width to match aspect ratio
+            }
+
+            // Ensure the canvas doesn't exceed its parent's dimensions
+            const maxContainerWidth = container.clientWidth;
+            const maxContainerHeight = container.clientHeight;
+
+            if (width > maxContainerWidth) {
+                width = maxContainerWidth;
+                height = width / aspectRatio;
+            }
+            if (height > maxContainerHeight) {
+                height = maxContainerHeight;
+                width = height * aspectRatio;
+            }
+
+            renderer.setSize(width, height);
+            // Orthographic camera doesn't need frustum adjustment for aspect ratio
+            // if we're just scaling the canvas. The world coordinates remain the same.
+        }
+
+        // --- Game Loop ---
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            if (gameOver) return;
+
+            updateGameLogic();
+            renderer.render(scene, camera);
+        }
+
+        // --- Game Logic Updates ---
+        function updateGameLogic() {
+            // Update water balloons
+            waterBalloons.forEach(balloon => {
+                balloon.position.x += balloon.userData.velocity.x;
+                balloon.position.y += balloon.userData.velocity.y;
+
+                // Remove balloon if it goes off-screen
+                if (balloon.position.y > GAME_AREA_HEIGHT / 2 ||
+                    Math.abs(balloon.position.x) > GAME_AREA_WIDTH / 2) {
+                    scene.remove(balloon);
+                    waterBalloons.splice(waterBalloons.indexOf(balloon), 1);
+                }
+            });
+
+            // Update people
+            people.forEach(person => {
+                person.position.x += person.userData.speed;
+
+                // Reverse direction if person hits horizontal boundaries
+                if (person.position.x > GAME_AREA_WIDTH / 2 - PERSON_WIDTH / 2 ||
+                    person.position.x < GAME_AREA_WIDTH / -2 + PERSON_WIDTH / 2) {
+                    person.userData.speed *= -1;
+                    person.rotation.y = person.userData.speed > 0 ? 0 : Math.PI;
+                }
+            });
+
+            // Collision detection (water balloon vs. people)
+            for (let i = waterBalloons.length - 1; i >= 0; i--) {
+                const balloon = waterBalloons[i];
+                for (let j = people.length - 1; j >= 0; j--) {
+                    const person = people[j];
+                    if (checkCollision(balloon, person)) {
+                        // Determine score change based on person type
+                        if (person.userData.type === 'blue') {
+                            score += 100;
+                            blueTargetsLeft--; // Only decrement if a blue person is hit
+                        } else if (person.userData.type === 'red') {
+                            score -= 100;
+                        }
+
+                        // Check for negative score game over BEFORE removing entities
+                        if (score < 0) {
+                            endGame(false, "You hit too many red people and went into negative score!");
+                            return; // Exit function as game has ended
+                        }
+
+                        scene.remove(balloon);
+                        waterBalloons.splice(i, 1);
+                        scene.remove(person);
+                        people.splice(j, 1);
+
+                        updateUI();
+                        createSplash(person.position.x, person.position.y);
+
+                        // If blueTargetsLeft is zero, game over (player won)
+                        if (blueTargetsLeft <= 0) {
+                            endGame(true, "You hit all the blue people! Great job!");
+                            return; // Exit function as game has ended
+                        }
+                        // Spawn a new person if fewer than MAX_PEOPLE_ON_SCREEN are present
+                        if (people.length < MAX_PEOPLE_ON_SCREEN) {
+                            spawnPeople(1);
+                        }
+                        break; // Stop checking this balloon against other people
+                    }
+                }
+            }
+
+            // Check if all active people are gone, but blueTargetsLeft > 0, means player missed too many
+            if (people.length === 0 && blueTargetsLeft > 0 && waterBalloons.length === 0) {
+                endGame(false, "You ran out of people and couldn't hit all the blue targets!"); // Game over, player lost (ran out of targets)
+            }
+        }
+
+        // Simple AABB collision detection
+        function checkCollision(obj1, obj2) {
+            const balloonX = obj1.position.x;
+            const balloonY = obj1.position.y;
+            const balloonRadius = WATER_BALLOON_RADIUS;
+
+            const personX = obj2.position.x;
+            const personY = obj2.position.y;
+            const personHalfWidth = PERSON_WIDTH / 2;
+            const personHalfHeight = PERSON_HEIGHT / 2;
+
+            let closestX = Math.max(personX - personHalfWidth, Math.min(balloonX, personX + personHalfWidth));
+            let closestY = Math.max(personY - personHalfHeight, Math.min(balloonY, personY + personHalfHeight));
+
+            let distanceX = balloonX - closestX;
+            let distanceY = balloonY - closestY;
+
+            return (distanceX * distanceX + distanceY * distanceY) < (balloonRadius * balloonRadius);
+        }
+
+        // --- Game Object Spawning and Effects ---
+        function spawnPeople(count) {
+            for (let i = 0; i < count; i++) {
+                if (people.length >= MAX_PEOPLE_ON_SCREEN) break;
+
+                const personGeometry = new THREE.BoxGeometry(PERSON_WIDTH, PERSON_HEIGHT, 1);
+                
+                let personType;
+                // Count existing blue people
+                const bluePeopleOnScreen = people.filter(p => p.userData.type === 'blue').length;
+
+                // If no blue people are on screen, ensure the next one spawned is blue
+                if (bluePeopleOnScreen === 0) {
+                    personType = 'blue';
+                } else {
+                    // Otherwise, randomly choose between red and blue
+                    personType = Math.random() > 0.5 ? 'blue' : 'red';
+                }
+
+                const personMaterial = new THREE.MeshBasicMaterial({ color: PEOPLE_COLORS[personType.toUpperCase()] });
+                
+                const person = new THREE.Mesh(personGeometry, personMaterial);
+                person.userData.type = personType; // Store the type for collision logic
+
+                const startX = (Math.random() * (GAME_AREA_WIDTH - PERSON_WIDTH * 2)) - (GAME_AREA_WIDTH / 2 - PERSON_WIDTH);
+                const startY = Math.random() * (GAME_AREA_HEIGHT / 2 - LAUNCHER_Y - PERSON_HEIGHT * 2) + LAUNCHER_Y + PERSON_HEIGHT * 2;
+                person.position.set(startX, startY, 0);
+
+                person.userData.speed = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * (PEOPLE_MOVE_SPEED_MAX - PEOPLE_MOVE_SPEED_MIN) + PEOPLE_MOVE_SPEED_MIN);
+                person.rotation.y = person.userData.speed > 0 ? 0 : Math.PI;
+
+                people.push(person);
+                scene.add(person);
+            }
+        }
+
+        // Create a visual splash effect
+        function createSplash(x, y) {
+            const splashGeometry = new THREE.CircleGeometry(WATER_BALLOON_RADIUS * 1.5, 8);
+            const splashMaterial = new THREE.MeshBasicMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.8 });
+            const splash = new THREE.Mesh(splashGeometry, splashMaterial);
+            splash.position.set(x, y, 0);
+            scene.add(splash);
+
+            let opacity = 0.8;
+            let scale = 1;
+            const splashInterval = setInterval(() => {
+                opacity -= 0.1;
+                scale += 0.1;
+                splash.material.opacity = opacity;
+                splash.scale.set(scale, scale, scale);
+
+                if (opacity <= 0) {
+                    clearInterval(splashInterval);
+                    scene.remove(splash);
+                }
+            }, 50);
+        }
+
+        // --- Input Handling ---
+        function onKeyDown(event) {
+            if (gameOver) return;
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                    // Decrease angle (aim left)
+                    // Angle increases towards left (PI/2 is straight up, 0 is right, PI is left)
+                    // So for left arrow, we want to increase the angle towards PI.
+                    launcher.userData.aimAngle = Math.min(Math.PI - Math.PI / 6, launcher.userData.aimAngle + LAUNCHER_ANGLE_STEP); // Limit between 30 and 150 degrees (0 to PI)
+                    updateAimingLine();
+                    break;
+                case 'ArrowRight':
+                    // Increase angle (aim right)
+                    // For right arrow, we want to decrease the angle towards 0.
+                    launcher.userData.aimAngle = Math.max(Math.PI / 6, launcher.userData.aimAngle - LAUNCHER_ANGLE_STEP); // Limit between 30 and 150 degrees (0 to PI)
+                    updateAimingLine();
+                    break;
+                case ' ': // Spacebar
+                    fireWaterBalloon();
+                    break;
+            }
+        }
+
+        // Update the aiming line's visual representation
+        function updateAimingLine() {
+            const endX = launcher.position.x + Math.cos(launcher.userData.aimAngle) * 70;
+            const endY = launcher.position.y + Math.sin(launcher.userData.aimAngle) * 70;
+
+            const points = [
+                new THREE.Vector3(launcher.position.x, launcher.position.y, 0),
+                new THREE.Vector3(endX, endY, 0)
+            ];
+            aimingLine.geometry.setFromPoints(points);
+
+            // Update arrowhead position and rotation
+            arrowhead.position.set(endX, endY, 0);
+            // The BoxGeometry for the arrowhead points along its Y-axis by default when rotation.z is 0.
+            // We want it to point along the current aimAngle.
+            // The angle from positive X to positive Y is Math.PI / 2.
+            // So, to align the arrowhead's Y-axis with aimAngle, we need to add -Math.PI / 2 to aimAngle.
+            // If aimAngle is PI/2 (straight up), rotation.z becomes 0 (arrowhead points up).
+            // If aimAngle is 0 (right), rotation.z becomes -PI/2 (arrowhead points right).
+            // If aimAngle is PI (left), rotation.z becomes PI/2 (arrowhead points left).
+            arrowhead.rotation.z = launcher.userData.aimAngle - Math.PI / 2;
+        }
+
+        // Fire a water balloon
+        function fireWaterBalloon() {
+            const balloonGeometry = new THREE.CircleGeometry(WATER_BALLOON_RADIUS, 8);
+            const balloonMaterial = new THREE.MeshBasicMaterial({ color: 0x00BFFF });
+            const waterBalloon = new THREE.Mesh(balloonGeometry, balloonMaterial);
+
+            waterBalloon.position.set(launcher.position.x, launcher.position.y + WATER_BALLOON_RADIUS, 0);
+
+            waterBalloon.userData.velocity = new THREE.Vector2(
+                Math.cos(launcher.userData.aimAngle) * LAUNCH_SPEED,
+                Math.sin(launcher.userData.aimAngle) * LAUNCH_SPEED
+            );
+
+            waterBalloons.push(waterBalloon);
+            scene.add(waterBalloon);
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            scoreDisplay.textContent = score;
+            peopleCountDisplay.textContent = blueTargetsLeft; // Now displays blue targets left
+            if (score > highScore) {
+                highScore = score;
+                highScoreDisplay.textContent = highScore;
+                localStorage.setItem('waterBalloonHighScore', highScore);
+            }
+        }
+
+        // --- Game End ---
+        // Added a message parameter to provide more context for game over
+        function endGame(playerWon, message = "") {
+            gameOver = true;
+            cancelAnimationFrame(animationFrameId); // Stop the animation loop
+            document.removeEventListener('keydown', onKeyDown); // Disable input
+
+            // Use the provided message or default based on win/loss
+            if (message) {
+                showMessageBox(message);
+            } else if (playerWon) {
+                showMessageBox("You hit all the blue people! Great job!");
+            } else {
+                showMessageBox("Game Over!"); // Fallback message
+            }
+
+            finalScoreDisplay.textContent = score;
+            finalHighScoreDisplay.textContent = highScore;
+            gameOverScreen.classList.remove('hidden'); // Show game over screen
+        }
+    </script>
+</body>
+</html>
