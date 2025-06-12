@@ -20,7 +20,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
+            /* Removed overflow: hidden; to allow scrolling */
             padding: 1rem;
         }
 
@@ -592,14 +592,14 @@
 
             switch (event.key) {
                 case 'ArrowLeft':
-                    // Decrease angle (aim left)
+                    // Increase angle (aim left)
                     // Angle increases towards left (PI/2 is straight up, 0 is right, PI is left)
                     // So for left arrow, we want to increase the angle towards PI.
                     launcher.userData.aimAngle = Math.min(Math.PI - Math.PI / 6, launcher.userData.aimAngle + LAUNCHER_ANGLE_STEP); // Limit between 30 and 150 degrees (0 to PI)
                     updateAimingLine();
                     break;
                 case 'ArrowRight':
-                    // Increase angle (aim right)
+                    // Decrease angle (aim right)
                     // For right arrow, we want to decrease the angle towards 0.
                     launcher.userData.aimAngle = Math.max(Math.PI / 6, launcher.userData.aimAngle - LAUNCHER_ANGLE_STEP); // Limit between 30 and 150 degrees (0 to PI)
                     updateAimingLine();
